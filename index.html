@@ -368,7 +368,8 @@
 
               console.log("zrc html " + e.cancelable)
               console.log("zrc html " + r)
-              if(!( !e.cancelable || r !== 'pulling' && r !== 'refreshing' && r !== 'reached')){
+              // !e.cancelable ||
+              if(!(  r !== 'pulling' && r !== 'refreshing' && r !== 'reached')){
                 console.log("zrc html " + "e.preventDefault()")
                 e.preventDefault()
               } else {
