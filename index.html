@@ -1,0 +1,471 @@
+<html lang="zh-CN" style="font-size: 16px">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <meta id="viewport" name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+    <title>scroll-view</title>
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <style>
+      /* component */
+      html {
+        -webkit-user-select: none;
+        user-select: none;
+        height: 100%;
+        width: 100%;
+      }
+
+      body {
+        -webkit-user-select: none;
+        user-select: none;
+        width: 100%;
+        overflow-x: hidden;
+      }
+      .scroll-view{
+        display: block;
+        position: relative;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        height: 100%;
+        max-height: inherit;
+        overscroll-behavior: 'initial';
+      }
+      .refresher--container--private{
+        display: -webkit-flex;
+        display: flex
+      }
+     
+    .refresher--container--private .refresher-default-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-left: 5px;
+      opacity: .3;
+      background: #000
+    }
+
+    .refresher--container--private .refresher-default-dot:first-child {
+      margin-left: 0
+    }
+
+    .refresher--container--private .refresher-default-white {
+      opacity: .5;
+      background: #fff
+    }
+
+    .refresher--container--private .refresher-default-dot-1-blink-anim {
+      animation: 1s refresher-blink-anim .3s infinite
+    }
+
+    .refresher--container--private .refresher-default-dot-2-blink-anim {
+      animation: 1s refresher-blink-anim .6s infinite
+    }
+
+    .refresher--container--private .refresher-default-dot-3-blink-anim {
+      animation: 1s refresher-blink-anim .9s infinite
+    }
+
+    .refresher--container--private .refresher-default-dot-1-fold {
+      animation: .1s refresher-dot-1-fold-anim 0s
+    }
+
+    .refresher--container--private .refresher-default-dot-3-fold {
+      animation: .1s refresher-dot-3-fold-anim 0s
+    }
+
+    @-webkit-keyframes refresher-blink-anim {
+      25% {
+        opacity: .7
+      }
+      50% {
+        opacity: .5
+      }
+      75% {
+        opacity: .3
+      }
+    }
+
+    @keyframes refresher-blink-anim {
+      25% {
+        opacity: .7
+      }
+      50% {
+        opacity: .5
+      }
+      75% {
+        opacity: .3
+      }
+    }
+
+    @-webkit-keyframes refresher-dot-1-fold-anim {
+      to {
+        -webkit-transform: translateX(13px);
+        transform: translateX(13px)
+      }
+    }
+
+    @keyframes refresher-dot-1-fold-anim {
+      to {
+        -webkit-transform: translateX(13px);
+        transform: translateX(13px)
+      }
+    }
+
+    @-webkit-keyframes refresher-dot-3-fold-anim {
+      to {
+        -webkit-transform: translateX(-13px);
+        transform: translateX(-13px)
+      }
+    }
+
+    @keyframes refresher-dot-3-fold-anim {
+      to {
+        -webkit-transform: translateX(-13px);
+        transform: translateX(-13px)
+      }
+    }
+
+    .refresher--content--private {
+      height: 100%;
+    }
+    </style>
+    <style>
+      /* page */
+      .page-section-spacing{
+        margin-top: 30px;
+      }
+      .scroll-view_H{
+        white-space: nowrap;
+      }
+      .scroll-view-item{
+        height: 150px;
+      }
+      .scroll-view-item_H{
+        display: inline-block;
+        width: 100%;
+        height: 150px;
+      }
+
+      .demo-text-1{
+        position: relative;
+        align-items: center;
+        justify-content: center;
+        background-color: #1AAD19;
+        color: #FFFFFF;
+        font-size: 18px;
+      }
+      .demo-text-1:before{
+        content: 'A';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .demo-text-2{
+        position: relative;
+        align-items: center;
+        justify-content: center;
+        background-color: #2782D7;
+        color: #FFFFFF;
+        font-size: 18px;
+      }
+      .demo-text-2:before{
+        content: 'B';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .demo-text-3{
+        position: relative;
+        align-items: center;
+        justify-content: center;
+        background-color: #F1F1F1;
+        color: #353535;
+        font-size: 18px;
+      }
+      .demo-text-3:before{
+        content: 'C';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+      <div>123</div>
+    </div>
+    <div id="scroll-view">
+      <div id="main" class="scroll-view" style="overflow-x: hidden; overflow-y: scroll; width: 100%; height: 400px;">
+        <div id="container" class="refresher--container--private" style="width: 100%; height: 100%; position: absolute;">
+          <div id="refresherDot" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 75px">
+            <div style="width: 100%; height: 100%; display: flex; align-items: flex-end; justify-content: center;">
+              <div id="dot1" class="refresher-default-dot"></div>
+              <div id="dot2" class="refresher-default-dot"></div>
+              <div id="dot3" class="refresher-default-dot"></div>
+            </div>
+          </div>
+        </div>
+  
+        <div id="content" class="refresher--content--private">
+          <div class="scroll-view-item_H demo-text-1"></div>
+          <div class="scroll-view-item_H demo-text-2"></div>
+          <div class="scroll-view-item_H demo-text-3"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // VConsole 会自动挂载到 `window.VConsole`
+      var vConsole = new window.VConsole();
+    </script>
+
+    <script>
+      // library content
+      function initRefresherInst (e) {
+        let r ; const a = (e = Object.assign({
+          refresherThreshold: 60
+        }, e)).container
+        const t = e.parentNode
+        const s = e.contentNode
+        const l = e.scrollerNode
+        let c = e.refresherThreshold
+        const d = e.onPulling
+        const i = e.onRefresh
+        const u = e.onRestore
+        const n = e.onAbort
+        const h = t.getBoundingClientRect().height || window.screen.height
+        a && (a.style.position = 'absolute', a.style.height = window.screen.height + 'px', a.style.top = -1 * window.screen.height + 'px')
+
+        function animate (s, e, l, cb, d) {
+          M && window.cancelAnimationFrame(M)
+          let u = null
+          const h = e < s ? -1 : 1
+          const p = Math.abs(e - s)
+          if (l !== 0) {
+            M = window.requestAnimationFrame(function e (t) {
+              let i; let n; const o = (t - (u = u || t)) / l
+              const r = (i = o > 1 ? 1 : o, n = 1 - Math.pow(i - 1, 2), Math.sqrt(n < 0 ? 0 : n))
+              const a = Math.floor(s + h * r * p)
+              if (cb(a), Math.abs(a - s) >= p) return typeof d === 'function' && d(a), void (M = null)
+              M = window.requestAnimationFrame(e)
+            })
+          }
+        }
+
+        function p () {
+          animate(T, c, 300, function (e) {
+            a.style.transform = 'translateY('.concat(T, 'px)'), s.style.transform = T ? 'translateY('.concat(T, 'px)') : '', T = e
+          })
+        }
+
+        function f () {
+          return new Promise(function (t) {
+            animate(T, 0, 200, function (e) {
+              a.style.transform = 'translateY('.concat(e, 'px)'), s.style.transform = e ? 'translateY('.concat(e, 'px)') : ''
+            }, function (e) {
+              T = e, t()
+            })
+          })
+        }
+
+        function g () {
+          r = 'refreshing', i(T), p()
+        }
+        let v; let _; let A; let m; let b; let w; let y; let x; let I; let C; let E; let S; let k = !1
+        var T = 0
+        var M = null
+
+        function D (e, t) {
+          r === null || k || (r !== 'refreshing' ? r === 'pulling' ? (r = 'aborting', n(T), k = !0, animate(T, 0, 300, function (e) {
+            a.style.transform = 'translateY('.concat(e, 'px)'), s.style.transform = e ? 'translateY('.concat(e, 'px)') : ''
+          }, function (e) {
+            T = e, r = null, k = !1, t()
+          })) : r === 'reached' && g() : p())
+        }
+
+        function N () {
+          _ = A = b = m = void 0
+        }
+
+        function P (e) {
+          const t = Array.prototype.slice.call(e.changedTouches).filter(function (e) {
+            return e.identifier === _
+          })[0]
+          return t && (e.distX = Math.abs(t.screenX - m), e.distY = Math.abs(t.screenY - b), e.deltaY = t.screenY - A, A = t.screenY, 1)
+        }
+
+        function L (e) {
+          let t
+          S || (t = e.changedTouches[0], _ = t.identifier, m = t.screenX, b = t.screenY, A = t.screenY)
+        }
+
+        function O (e) {
+          S || P(e) && (x && !w && (x(e, N), w = !0), I(e, N))
+        }
+
+        function B (e) {
+          S || P(e) && C(e, N)
+        }
+
+        function R (e) {
+          P(e) && E(e, N)
+        }
+        return cd(cd({}, (y = (v = {
+          element: l,
+          onpanmove: function (e, t) {
+            const i = e.deltaY
+            if (!(l.scrollTop > 0 || k || i < 0 && !r || r === 'aborting' || r === 'restoring' || e.distY < e.distX || e.distY < 5)) {
+              r = r || 'pulling'
+              console.log(e,e.cancelable)
+
+              console.log("zrc html " + e.cancelable)
+              console.log("zrc html " + r)
+              if(!( !e.cancelable || r !== 'pulling' && r !== 'refreshing' && r !== 'reached')){
+                console.log("zrc html " + "e.preventDefault()")
+                e.preventDefault()
+              } else {
+                console.log("zrc html " + "not!!!!!!!! preventDefault()")
+              }
+              if (r === 'refreshing' && i < -10) {
+                return r = 'restoring', u(T), void f().then(function () {
+                  r = null, k = !1, t()
+                })
+              }
+              let n; const o = (n = Math.min(T / h, 1), 0.52 * Math.pow(1 - n, 2))
+              T += Math.ceil(i * o), r === 'refreshing' || (c <= T && r !== 'reached' || T < c && r !== 'pulling') && (r = r === 'reached' ? 'pulling' : 'reached'), M && window.cancelAnimationFrame(M), r !== 'refreshing' && d(T), a.style.transform = T ? 'translateY('.concat(T, 'px)') : '', s.style.transform = T ? 'translateY('.concat(T, 'px)') : ''
+            }
+          },
+          onpanend: D,
+          onpancancel: D
+        }).element, x = v.onpanstart, I = v.onpanmove, C = v.onpanend, E = v.onpancancel, S = !1, y.addEventListener('touchstart', L), I && y.addEventListener('touchmove', O, {
+          passive: !1
+        }), C && y.addEventListener('touchend', B, {
+          passive: !1
+        }), E && y.addEventListener('touchcancel', R, {
+          passive: !1
+        }), {
+          updateLock: function (e) {
+            S = e
+          },
+          dispose: function () {
+            y.removeEventListener('touchstart', L), I && y.removeEventListener('touchmove', O, {
+              passive: !1
+            }), C && y.removeEventListener('touchend', B, {
+              passive: !1
+            }), E && y.removeEventListener('touchcancel', R, {
+              passive: !1
+            })
+          }
+        })), {}, {
+          updateThreshold: function (e) {
+            c = e
+          },
+          triggerOpen: function () {
+            r || (r = 'pulling', animate(0, c, 400, function (e) {
+              a.style.transform = 'translateY('.concat(e, 'px)'), s.style.transform = e ? 'translateY('.concat(e, 'px)') : '', d(e)
+            }, function (e) {
+              T = e, k = !1, g()
+            }))
+          },
+          triggerClose: function () {
+            r !== 'restoring' && r && (r = 'restoring', u(T), k = !0, f().then(function () {
+              r = null, k = !1
+            }))
+          }
+        })
+      }
+
+      function ld (t, e) {
+        let i; const n = Object.keys(t)
+        return Object.getOwnPropertySymbols && (i = Object.getOwnPropertySymbols(t), e && (i = i.filter(function (e) {
+          return Object.getOwnPropertyDescriptor(t, e).enumerable
+        })), n.push.apply(n, i)), n
+      }
+
+      function cd (o) {
+        for (let e = 1; e < arguments.length; e++) {
+          var r = arguments[e] != null ? arguments[e] : {}
+          e % 2 ? ld(Object(r), !0).forEach(function (e) {
+            let t, i, n
+            t = o, n = r[i = e], i in t ? Object.defineProperty(t, i, {
+              value: n,
+              enumerable: !0,
+              configurable: !0,
+              writable: !0
+            }) : t[i] = n
+          }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(o, Object.getOwnPropertyDescriptors(r)) : ld(Object(r)).forEach(function (e) {
+            Object.defineProperty(o, e, Object.getOwnPropertyDescriptor(r, e))
+          })
+        }
+        return o
+      }
+
+    </script>
+    <script>
+      // js content
+      const _refresherInst = initRefresherInst({
+        parentNode: document.getElementById('scroll-view'),
+        contentNode: document.getElementById('content'),
+        scrollerNode: document.getElementById('main'),
+        container: document.getElementById('container'),
+        refresherThreshold: 45,
+        onPulling: ()=>{},
+        onRefresh: ()=>{
+          setTimeout(function () {
+            _refresherInst.triggerClose()
+          },2000)
+        },
+        onRestore: ()=>{},
+        onAbort: ()=>{}
+      })
+    </script>
+  </body>
+</html>
