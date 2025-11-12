@@ -1,16 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-<style>
-    p {
-      font-size: 50px;
-      line-height: 4.0;
+<head>
+  <meta charset="UTF-8">
+  <title>触摸事件监听示例</title>
+  <style>
+    #touchArea {
+      width: 300px;
+      height: 200px;
+      background-color: #f0f0f0;
+      border: 2px solid #333;
+      margin: 50px auto;
+      text-align: center;
+      line-height: 200px;
+      font-family: Arial, sans-serif;
     }
-</style>
+  </style>
+</head>
 <body>
-<p>这是啊测试的第一行</p>
-<p>这是啊测试的第二行</p>
-<p>这是啊测试的第三行</p>
-<p>这是啊测试的第四行</p>
-<p>这是啊测试的第五行</p>
+
+  <div id="touchArea">触摸我</div>
+  <pre id="output"></pre>
+
+  <script>
+    const touchArea = document.getElementById('touchArea');
+    const output = document.getElementById('output');
+
+    touchArea.addEventListener('touchstart', (event) => {
+      output.textContent += 'touchstart: ' + event.touches.length + ' 个触点开始
+';
+    });
+
+    touchArea.addEventListener('touchmove', (event) => {
+      output.textContent += 'touchmove: 触点移动，数量 = ' + event.touches.length + '
+';
+      event.preventDefault(); // 防止默认行为（如页面滚动）
+    });
+
+    touchArea.addEventListener('touchend', (event) => {
+      output.textContent += 'touchend: 触点结束，数量 = ' + event.changedTouches.length + '
+';
+    });
+
+    touchArea.addEventListener('touchcancel', (event) => {
+      output.textContent += 'touchcancel: 触点被取消，数量 = ' + event.touches.length + '
+';
+      // 通常你在这里做一些清理或恢复状态的操作
+    });
+  </script>
+
 </body>
 </html>
