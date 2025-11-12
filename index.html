@@ -1,65 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <title>触摸事件监听示例</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        #touchArea {
-          width: 300px;
-          height: 200px;
-          background-color: #f0f0f0;
-          border: 2px solid #333;
-          margin: 50px auto;
-          text-align: center;
-          line-height: 200px;
-          font-family: Arial, sans-serif;
-        }
-        .content {
-            background-color: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            height: 80px;
-            font-size: 14px;
-            line-height: 1.5;
-            overflow: auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
 </head>
+
+<script src="./js/vue.min.js"></script>
+
 <body>
-
-<p id="touchArea">触摸我</p>
-<div id="log" class="content"></div>
-
+  <div id="app">
+    <div v-html="message" ref="content" @touchstart="handleTouchStart" @touchmove="handleTouchMove"
+      @touchend="handleTouchEnd"></div>
+      <br>
+      <br>
+      <br>
+      <br>
+    <div>{{ val }}</div>
+  </div>
+</body>
 <script>
-    const touchArea = document.getElementById('touchArea');
-    const output = document.getElementById('log');
+  var app = new Vue({
+    el: '#app',
+    data: {
+      message: '11月9日晚，中共中央总书记、国家主席、中央军委主席习近平在广东省广州市出席中华人民共和国第十五届运动会开幕式并宣布运动会开幕。这是习近平在主席台上向大家挥手致意。新华社记者 燕雁 摄新华社广州11月9日电,中华人民共和国第十五届运动会9日晚在广东省广州市隆重开幕。中共中央总书记、国家主席、中央军委主席习近平出席开幕式并宣布运动会开幕。9日晚的广东奥林匹克体育中心华灯璀璨，气氛热烈。这是首次由粤港澳三地联合举办的全国运动会。19时58分，在欢快的乐曲声中，习近平和夫人彭丽媛等步入主席台，向观众挥手致意。全场响起长时间的热烈掌声。',
+      val:'',
+    },
+    methods:{
+      handleTouchStart(){
 
-    function log(text) {
-        output.innerText = `${output.innerText}${text}\n`;
-        output.scrollTop = output.scrollHeight;
+      },
+      handleTouchMove(){
+
+      },
+      handleTouchEnd(){
+        const selection = window.getSelection();
+        const text = selection.toString();
+        this.val = text
+      },
     }
-
-    touchArea.addEventListener('touchstart', (event) => {
-      log('touchstart: ' + event.touches.length + ' 个触点开始');
-    });
-
-    touchArea.addEventListener('touchmove', (event) => {
-      log('touchmove: 触点移动，数量 = ' + event.touches.length);
-      //event.preventDefault(); // 防止默认行为（如页面滚动）
-    });
-
-    touchArea.addEventListener('touchend', (event) => {
-      log('touchend: 触点结束，数量 = ' + event.changedTouches.length);
-    });
-
-    touchArea.addEventListener('touchcancel', (event) => {
-      log('touchcancel: 触点被取消，数量 = ' + event.touches.length);
-      // 通常你在这里做一些清理或恢复状态的操作
-    });
+  })
 </script>
 
-</body>
 </html>
