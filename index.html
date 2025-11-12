@@ -39,6 +39,11 @@
         const text = selection.toString();
         this.val = text
       },
+      handleTouchCancel(){
+        const selection = window.getSelection();
+        const text = selection.toString();
+        this.val = text
+      },
     }
   })
 </script>
