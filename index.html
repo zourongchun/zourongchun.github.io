@@ -1,51 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-
-<script src="./vue.min.js"></script>
-
-<body>
-  <div id="app">
-    <div v-html="message" ref="content" @touchstart="handleTouchStart" @touchmove="handleTouchMove"
-      @touchend="handleTouchEnd" @touchcancel="handleTouchCancel"></div>
-      <br>
-      <br>
-      <br>
-      <br>
-    <div>{{ val }}</div>
-  </div>
-</body>
-<script>
-  var app = new Vue({
-    el: '#app',
-    data: {
-      message: '这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本，这是一段测试文本',
-      val:'',
-    },
-    methods:{
-      handleTouchStart(){
-
-      },
-      handleTouchMove(){
-
-      },
-      handleTouchEnd(){
-        const selection = window.getSelection();
-        const text = selection.toString();
-        this.val = text
-      },
-      handleTouchCancel(){
-        const selection = window.getSelection();
-        const text = selection.toString();
-        this.val = text
-      },
-    }
-  })
-</script>
-
-</html>
+<testsuites name="DragTest_DragInWeb_Level03" timestamp="2025-12-30 15:21:38" time="79.412" errors="0" disabled="0" failures="1" tests="1" ignored="0" unavailable="0" message="[Script-0203002] &#22270;&#29255;&#27604;&#23545;&#22833;&#36133;" starttime="2025-12-30 15:20:18" endtime="2025-12-30 15:21:38" repeat="1" round="1" test_type="DeviceTest" devices="&lt;![CDATA[[{&quot;sn&quot;:&quot;${SNNO}&quot;,&quot;model&quot;:&quot;HAD-W32&quot;,&quot;type&quot;:&quot;2in1&quot;,&quot;platform&quot;:&quot;HarmonyOS NEXT&quot;,&quot;version&quot;:&quot;HAD-W24 6.1.0.23(SP22C00E2R12P4log)&quot;,&quot;others&quot;:{}}]]]&gt;">
+  <testsuite name="DragTest_DragInWeb_Level03" time="79.412" errors="0" disabled="0" failures="1" ignored="0" tests="1" message="" report="details/DragTest_DragInWeb_Level03.html">
+    <testcase name="DragTest_DragInWeb_Level03" status="run" time="79.412" classname="DragTest_DragInWeb_Level03" result="false" level="1" message="[Script-0203002] &#22270;&#29255;&#27604;&#23545;&#22833;&#36133;" report="details/DragTest_DragInWeb_Level03.html">
+      <test name="test_case_1" time="19.6" result="true" result_kind="Passed" message="" />
+      <test name="test_case_2" time="4.48" result="false" result_kind="Failed" message="[Script-0203003] Step checker.is_true(DUT1.${SNNO}, False, True) result TestError!" />
+      <test name="test_case_3" time="6.61" result="false" result_kind="Failed" message="[Script-0203002] &#22270;&#29255;&#27604;&#23545;&#22833;&#36133;" />
+      <test name="test_case_4" time="3.54" result="true" result_kind="Passed" message="" />
+      <test name="test_case_5" time="39.42" result="true" result_kind="Passed" message="" />
+    </testcase>
+  </testsuite>
+</testsuites>
