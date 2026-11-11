@@ -28,3 +28,19 @@ proposal_sampling_input	0.40	0.40	4.99
 3. 这两处与动态规划无关，是“isolate planning path”重构误伤；9d774e6 没修，OFF 同样 +60ms(off_12 framework 54.9 vs 旧线 19.5)
 ON 专属税 ~12ms(P1):plan_search 6ms(决策可跨步缓存，verification_plan.py:586)+ cost 路径 5ms(校准修复后病根已除，可安全恢复 88c758b 的异步 overlap)。P2:proposal_sampling_input 4.6ms、verify 5-6ms。
 修复后投影:P0 revert → OFF 墙钟 171→111ms(equivalent_latency 60.8→*39.6**),ON 166→106(63.9→*40.5*)——*ON/OFF 差距从 +5.1% 缩到 ~+2%,当前对比结论被公共回退严重失真**。
+
+
+framework 细粒度分解(on16 vs off13,每活跃步；嵌套已按 execution_engine.py:974-1235 核对，账面闭合)*：
+层级	on_16	off_13	Δ
+input_preparation	40.47	32.93	+7.54
+├ plan_and_pack(plan_search)	7.21(6.89)	0.26(0)	+6.95
+├ cache_mapping	31.87	31.64	+0.23(双侧公共，§17.5)
+└ batch_tensor+misc	1.39	1.03	+0.36
+proposal 非模型开销	10.30	5.20	+5.10
+├ proposal_sampling_input	4.46	0.18	+4.28
+├ graph_copy/input/state 等	2.05	1.51	+0.54+…
+gap(未记账)	12.56	10.56	+2.00
+verify	5.64	5.96	−0.32
+合计	68.97	54.65	+14.32
+劣化排序：① plan_search +6.89(48%)=cpu 3.30+collective 1.42+d2h 1.42+to_host 1.02+prepare 0.52;② *proposal_sampling_input +4.28(30%)*——常量标志的每步 all_reduce 协调，30ca40e 只修掉一小半(OFF 侧仅 0.18);③ gap +2.00(未记账，需 profiler);④ 杂项 ~+1.4。
+两个新发现：搜索缓存完全无效(hits=0 / misses=52000≈512行×101步——键粒度逐行，每步全变，需行组级键)；异步重叠闲置(cost_async_total=0——6.9ms 全串行在关键路径，异步化空间完整)。
