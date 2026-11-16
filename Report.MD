@@ -1,51 +1,3 @@
-分析完成。目录已命名 qa_bs512_max256_dense_off_12,yaml 已翻回 ON。9d774e6 官方口径 ON/OFF 终评(on14 vs off12,同代码同配置)：
-指标 (r0)	OFF (off_12)	ON (on_14)
-equivalent_latency_ms	60.80 (r1 61.77)	63.93 (r1 64.26)
-有效 decode TPS	466.7 tok/s	441.5
-含尾部空跑 decode TPS	190.4	212.2
-全局 TPS (16 rank)	7199 / 3049	6891 / 3398
-model_only_step_ms	116.5	99.6
-framework_overhead_step_ms	56.1	67.9
-avg_delivered_length	2.839	2.620
-关键发现——尾部空跑是 ON 全程收益的唯一来源：
-- 尾部(155/146 步，占 57-60%):OFF 跑静态 w6 宽图 162.3ms/步，ON 空跑段自动降为 seed-only 窄图 135.9ms/步 → 省 4.35s;active 阶段 ON 反而慢 1.0s
-- 所以 ON 的 +11.4% 全程 TPS 是调度器行为红利(空跑到 max_new_tokens),不是规划质量收益；OFF 若同样跳尾部即被中和
-- 请求侧结论与 §17.3 推导口径一致且收敛(+5.1% vs +8.0%):静态 L=5 仍接近最优，ON 输在行级置信度裁剪(交付 2.84→2.62)+ 调度税 11.8ms/步
-
-
-分析完毕，规划等开销(framework_overhead)的构成与优化点：
-逐项分解(ms/步，r0):
-组件	旧线 off_10	off_12	on_14
-model_input	2.57	32.74	36.44
-cache_mapping	2.01	32.05	29.62
-plan_search	0	0	6.02
-cost 同步路径	—	0	4.5+1.3
-proposal_sampling_input	0.40	0.40	4.99
-合计(wall−model)	19.5	54.9	67.2
-两处 f1d8914 硬回退(占 60ms,双侧受害，是 P0):
-1. cache_utils.py:548 prepare_slot_mapping——88c758b 已向量化(repeat_interleave 一次建索引、仅 1 次 .item()),f1d8914 整个 revert 回逐请求循环：32 行 × 2 次 .item() 同步 + 逐行 gather → cache_mapping 2→32ms
-2. execution_engine.py npugraph_ex 分支——88c758b 只 1 次 D2H(query lengths 直接取 plan 的 CPU 副本)，f1d8914 改成每步 3 次 .cpu().tolist() + 新增 2-3 处 accepted_num.cpu().tolist() → model_input 2.6→32.7ms
-3. 这两处与动态规划无关，是“isolate planning path”重构误伤；9d774e6 没修，OFF 同样 +60ms(off_12 framework 54.9 vs 旧线 19.5)
-ON 专属税 ~12ms(P1):plan_search 6ms(决策可跨步缓存，verification_plan.py:586)+ cost 路径 5ms(校准修复后病根已除，可安全恢复 88c758b 的异步 overlap)。P2:proposal_sampling_input 4.6ms、verify 5-6ms。
-修复后投影:P0 revert → OFF 墙钟 171→111ms(equivalent_latency 60.8→*39.6**),ON 166→106(63.9→*40.5*)——*ON/OFF 差距从 +5.1% 缩到 ~+2%,当前对比结论被公共回退严重失真**。
-
-
-framework 细粒度分解(on16 vs off13,每活跃步；嵌套已按 execution_engine.py:974-1235 核对，账面闭合)*：
-层级	on_16	off_13	Δ
-input_preparation	40.47	32.93	+7.54
-├ plan_and_pack(plan_search)	7.21(6.89)	0.26(0)	+6.95
-├ cache_mapping	31.87	31.64	+0.23(双侧公共，§17.5)
-└ batch_tensor+misc	1.39	1.03	+0.36
-proposal 非模型开销	10.30	5.20	+5.10
-├ proposal_sampling_input	4.46	0.18	+4.28
-├ graph_copy/input/state 等	2.05	1.51	+0.54+…
-gap(未记账)	12.56	10.56	+2.00
-verify	5.64	5.96	−0.32
-合计	68.97	54.65	+14.32
-劣化排序：① plan_search +6.89(48%)=cpu 3.30+collective 1.42+d2h 1.42+to_host 1.02+prepare 0.52;② *proposal_sampling_input +4.28(30%)*——常量标志的每步 all_reduce 协调，30ca40e 只修掉一小半(OFF 侧仅 0.18);③ gap +2.00(未记账，需 profiler);④ 杂项 ~+1.4。
-两个新发现：搜索缓存完全无效(hits=0 / misses=52000≈512行×101步——键粒度逐行，每步全变，需行组级键)；异步重叠闲置(cost_async_total=0——6.9ms 全串行在关键路径，异步化空间完整)。
-
-
 11月16日：
 off29(动态关)vs onzos2(动态开+ZOS)逐模块对比(ms/step)
 模块(嵌套关系)	OFF	ON+ZOS
@@ -71,3 +23,27 @@ eq = step / accept	60.05	63.65
 2. eq 反而差 6% 的决定因素是 accept 掉 6.8%(2.617→2.625?不对：2.817→2.625):动态规划选 L3 每轮交付 2.625,OFF 固定 L5 交付 2.817——每 token 成本被摊薄得更少
 3. 也就是说：动态 verify 开+ZOS 的差距不在某个 host 耗时块，而在“L3 vs L5 的接受长度损失”；时间块层面，预取撑大的 Proposal 窗口(+13.7)吃掉了小验证宽度收益(−14.5),使 step 的净优势只剩 2.1ms,不足以覆盖 accept 损失
 若要追平 OFF:要么把预取压进 16ms 设备窗口内(step 再省 ~5ms,仍不够单独翻盘)，要么提高 L3 的 accept(决策预算向接受长度倾斜)——后者杠杆更大(accept 每提高 0.1,eq 降约 2.4ms)。
+
+
+1116_1546:
+GAP 1:每请求 .item() 同步循环(defer 路径下击穿重叠)
+- 位置:executor/core/forward_data_info/forward_data_info.py:445-484(update_requests_from_batch 循环)，:451 state.accepted_num.item();同类还有 ：488-493 update_speculative_state_from_batch→:151
+- 证据:profiler 实测 529 次/步 aten::item;defer 分支(execution_engine.py:1290-1300)把循环放进 proposal 执行期间，每次 .item() 等流 drain → 设备 burst 86-90% 饥饿(忙 6.5-8.7ms / wall 55-63ms);窗口 host 3.22→11.0ms(+7.76)
+- 改法：循环外一次批量读回:accepted_num.tolist()(computed_lens 同理)，或把簿记挪回流空闲时段
+- 预期:proposal_total 24.75 → 18ms,step −67ms
+GAP 2:plan 应用小算子风暴(动态独有，静态 L 无此开销)
+- 位置:proposal 提交路径的 plan take/remap/budget clamp/confidence→seqlens/cache mapping
+- 证据：每步 ~1137 个微小设备算子(Gather×96、FloorDiv×106、Add×103、Remainder/FloorMod×100,零模型算子)从 Python 逐个发射
+- 改法：整批 device 化——融合成 1-2 个算子，或并入 graph envelope
+- 预期：与 GAP 1 合计，proposal 窗口回到甚至低于 OFF 的 19.18(设备 draft 本身 13.77 已比 OFF 快 2.2)
+GAP 3:签名协调纯开销(消融已验证)
+- 位置:dspark_worker.py:1103(调用点)/:1318(_coordinate_proposal_signature):跨 DP all_reduce + flags.cpu() 两次设备同步
+- 证据：消融注释后 eq 63.945→61.656(−2.29ms),accept/delivered 无损；本部署各 DP 签名天然一致，4.96ms/步是纯税
+- 改法：签名决策缓存(请求集/采样配置不变时跳过)，或挪进 Target 窗口异步
+- 预期：已实测 −2.29ms
+汇总
+ 	eq TPOT
+OFF 基线	60.94
+ON+ZOS 现状	61.66(+1.2%)
+GAP 1+2+3 全修后预估	~58.5(−4%,反超 OFF)
+前提：accept(2.64)不变；若 GAP 1/2/3 修完仍无收益，剩余就是 accept 结构性差距(决策预算倾斜问题，非代码税)。
