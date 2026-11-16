@@ -44,3 +44,30 @@ verify	5.64	5.96	−0.32
 合计	68.97	54.65	+14.32
 劣化排序：① plan_search +6.89(48%)=cpu 3.30+collective 1.42+d2h 1.42+to_host 1.02+prepare 0.52;② *proposal_sampling_input +4.28(30%)*——常量标志的每步 all_reduce 协调，30ca40e 只修掉一小半(OFF 侧仅 0.18);③ gap +2.00(未记账，需 profiler);④ 杂项 ~+1.4。
 两个新发现：搜索缓存完全无效(hits=0 / misses=52000≈512行×101步——键粒度逐行，每步全变，需行组级键)；异步重叠闲置(cost_async_total=0——6.9ms 全串行在关键路径，异步化空间完整)。
+
+
+11月16日：
+off29(动态关)vs onzos2(动态开+ZOS)逐模块对比(ms/step)
+模块(嵌套关系)	OFF	ON+ZOS
+step 合计	169.15	167.08
+输入准备	30.00	31.20
+├ model_input(含采样协调)	29.44	30.38
+│  └ plan_and_pack(规划)	0.24	0.28
+├ metadata	0.33	0.42
+└ cache_mapping	28.82	29.62
+Target 调用	111.02	96.57
+├ target_model	102.36	85.63
+└ verify	5.63	5.18
+Proposal 窗口(提交→发布)	19.30	33.04
+├ 设备 draft(model_wall)	16.25	23.96
+│  └ 窗口内： 预取 next_plan_prepare	0	18.05
+│  └ 窗口内： host 簿记	0	2.88
+├ state_update	0.39	0.66
+框架 gap(未细分部分)	~8.8	~6.3
+accept(每轮交付 token)	2.817	2.625
+eq = step / accept	60.05	63.65
+因果链
+1. step 时间 ON 反而快 2.1ms:Target 收益 −14.5ms(L3 验证宽度 4 vs OFF 固定 L5 宽度 6,验证图更小)几乎被 Proposal 窗口 +13.7ms 抵消——窗口内塞入 18.05ms 预取，超过其想隐藏的 ~16ms 设备 draft 时间，设备尾部空转 ~8ms
+2. eq 反而差 6% 的决定因素是 accept 掉 6.8%(2.617→2.625?不对：2.817→2.625):动态规划选 L3 每轮交付 2.625,OFF 固定 L5 交付 2.817——每 token 成本被摊薄得更少
+3. 也就是说：动态 verify 开+ZOS 的差距不在某个 host 耗时块，而在“L3 vs L5 的接受长度损失”；时间块层面，预取撑大的 Proposal 窗口(+13.7)吃掉了小验证宽度收益(−14.5),使 step 的净优势只剩 2.1ms,不足以覆盖 accept 损失
+若要追平 OFF:要么把预取压进 16ms 设备窗口内(step 再省 ~5ms,仍不够单独翻盘)，要么提高 L3 的 accept(决策预算向接受长度倾斜)——后者杠杆更大(accept 每提高 0.1,eq 降约 2.4ms)。
