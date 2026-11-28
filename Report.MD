@@ -1,11 +1,20 @@
-11月27日：
-899830a（P0 kv_len 提前 staging）验证结论
-先说阻塞：远端漏加 ZosStepState.wait_host_kv（只加在 ZosCommitResult 上），ON 首跑即 AttributeError 崩溃——本地热修 3 行后完成验证，需远端补齐。
-功能面全部通过，但性能面无收益：
-每 step (ms)	OFF
-wall	65.415
-逐项：step1 回退 ✓ / 稳态 staged=True 22/22 ✓ / metadata_ms 0.245→0.109（.cpu() 成功跳过）✓ / 输出 16/16 rank bit-identical ✓ / wall 未达 −4~−5ms 预期 ✗
-根因（新瓶颈 P2，代码实锤）：scheduler.py:212 每个 run_step 开头 _drain_zos_deferred_releases()（:608-619 逐个 event.synchronize()），:702 每个请求结束都排队 release（release_event=下一轮 completion event）。只要有请求结束，host 在 prep 之前就被同步到上一轮 device 完成点——P0 删掉的 .cpu() 阻塞被这个 sync 原位顶替，commit+batch+prep+submit ~4-6ms 仍串在轮边界。佐证：ZOS 内部等待全测 ≈0（drain 已先同步）、framework 6.96 与 fd8ea3a 的 6.64 同构、gap 位置时长与 drain+commit+prep 吻合。
-另发现：ON 计数 32106 vs OFF 32550（−444）——生成结束 flush 的末轮 token 在计数窗口后落账，输出不受影响，纯口径问题。
-P2 建议（反馈远端）：块释放改惰性——请求结束仅 host 退役标记，synchronize()+free 推迟到 KV 池分配需要复用时。纯 decode 无新分配 → 同步完全退出关键路径，预期 wall 65.6 → ~60。
-TPS/TPOT 相对 OFF：+0.32% 带内持平，无实质劣化亦无收益；ON 环比（vs 7a791a6 ibench ON 65.979）−0.54%。
+11月28日：
+优化方向：把 ZOS 路径上"每步 pageable H2D"全部消除，让 ③ 真正立即返回
+根因报告 §四 已列了两条（缓存 / pinned），但按 trace 证据应这样排序：
+方向 A（首选）：采样参数跨步缓存 + greedy 短路
+- 缓存：decode 期每请求 temperature/top_p/top_k/top_logprobs 恒定 → 首次构建 device 张量，仅请求集变化时更新对应行（sampler.py:482-490，每步 5 个 H2D → 降至 0/签名变化时 1 次）
+- greedy 短路：_sample_tokens :345-355 在 all_greedy 时直接 argmax 返回，根本不用这些张量——build_sampling_metadata_async 现在却无条件构建（:482 无 all_greedy 判断）。全 greedy 批可完全不建 tensor，只留 Python 标量 flag
+- 代价：缓存失效逻辑（请求完成退出/新请求加入时重建行）
+方向 B（结构性，必须做）：统一 pinned + non_blocking 通道
+仓库已有 ZosHostTransfer 基建（_stage_zos_host_tensors :1484-1486，现只用于 D2H）——把 ZOS 路径所有每步 H2D 改走 pinned buffer + copy_(non_blocking=True)，源 buffer 由 completion event 回收。清单：
+- sampler.py:482-490（temperature/top_p/top_k）
+- execution_engine.py:1458-1464（input_ids.to+clone、rows、previous_rows）
+- :1472-1480（kv_len.to×2、kv_rows_device、previous_kv_rows）
+- :1759（current_kv_len.to）
+为什么"只修 sampler 那个"无效（结构性约束）
+现在 input prep 的 pageable H2D（:1458-1481）不阻塞，是因为轮首流是空的（上一轮已排空）。P3 一旦让 ③ 立即返回 → host 领先 → 下一轮 _apply_zos_device_state 在上轮 53ms 计算仍在流里时执行 → 它的 pageable H2D 成为新的全轮阻塞。所以正确顺序是：先把清单内 H2D 全部转 pinned/缓存，再放开 ③（这也是报告 §三-2 的结论）。
+预期收益与验证判据
+- span 65.18 → *55-57ms（host 段 10.9ms 藏进上一轮 53ms 计算，只剩 max(device 53.5, host~12) + 衔接）；TPS +1518%*；span 内 12.2ms device idle 与跨轮 1.55ms idle 消失
+- 收益上限 = host 段可隐藏量；若要更大，需继续压 host 段本身（10.9ms）
+- 复测判据（重跑 zosib2rs 对）：① span 内 aten::to/aclrtSynchronizeStream 消失；② span 中位 → ~55-57ms；③ 跨轮 device idle → ~0；④ 输出 32/32 一致
+不建议的偷懒法：把 metadata 构建前移到 replay 之前——流空闲时确实便宜，但 host 一旦领先，轮首窗口也不再空闲，等于没修。缓存（A）+ pinned（B）才是对"host 领先"regime 免疫的解。
